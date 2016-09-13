@@ -2,6 +2,8 @@
 
 Ruby wrapper for [Theoldreader's API](https://github.com/theoldreader/api).
 
+[![Gem Version](https://badge.fury.io/rb/theoldreader-api.svg)](https://badge.fury.io/rb/theoldreader-api)
+
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -100,6 +102,10 @@ And you can use API via http instead of https:
 ```ruby
 Theoldreader::Api.new('LyTEJPvTJiSPrCxLu46d', {use_ssl: false})
 ```
+
+## TODO
+
+Write specs
 
 ## Contributing
 
