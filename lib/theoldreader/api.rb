@@ -29,27 +29,37 @@ module Theoldreader
       'stream/contents' => { method: 'get', params: %w(s xt n r c nt ot output) },
       'mark-all-as-read' => { method: 'post', params: %w(s ts) },
       'edit-tag' => { method: 'post', params: %w(i a r annotation) },
-      '/reader/subscriptions/export' => { method: 'get' },
-      '/reader/atom' => { method: 'get' }
+      '/reader/subscriptions/export' => { method: 'get', params: %w(output) }
     }.freeze
 
-    attr_accessor :token, :http_options
+    attr_accessor :api_token, :http_options
 
-    def initialize(token = nil, http_options = {})
-      @token = token
+    def initialize(api_token = nil, http_options = {})
+      @api_token = api_token
       @http_options = http_options
     end
 
     def call(endpoint, params = {}, headers = {})
-      fail Exceptions::WrongEndpoint unless ENDPOINTS.keys.include?(endpoint)
+      guard_wrong_endpoint(endpoint)
+      call!(
+        ENDPOINTS[endpoint][:method], path(endpoint),
+        build_options(endpoint, params), headers
+      )
+    end
+
+    def call!(verb, endpoint, params = {}, headers = {})
       response = conn.send(
-        ENDPOINTS[endpoint][:method],
-        base_path_for(endpoint),
-        default_params(endpoint).merge(sanitize_params(endpoint, params)),
-        auth_header.merge(headers)
+        verb, endpoint, params, auth_header.merge(headers)
       )
       handle_erros(response)
       prepare_response(response)
+    end
+
+    ENDPOINTS.keys.each do |e|
+      method_name = e.downcase.sub(%r{^/+}, '').gsub(%r{[-/]}, '_').to_sym
+      define_method method_name do |*args|
+        call(e, *args)
+      end
     end
 
     private
@@ -57,15 +67,23 @@ module Theoldreader
     def conn
       @conn ||= Faraday.new(url: "#{protocol}://#{HOST}") do |faraday|
         faraday.request :url_encoded
-        faraday.adapter Faraday.default_adapter
+        faraday.adapter http_options[:adapter] || Faraday.default_adapter
       end
+    end
+
+    def guard_wrong_endpoint(endpoint)
+      fail Exceptions::WrongEndpoint unless ENDPOINTS.keys.include?(endpoint)
+    end
+
+    def build_options(endpoint, params)
+      default_params(endpoint).merge(sanitize_params(endpoint, params))
     end
 
     def protocol
       http_options[:use_ssl] == false ? 'http' : 'https'
     end
 
-    def base_path_for(endpoint)
+    def path(endpoint)
       (endpoint.start_with?('/') ? '' : BASE_PATH) + endpoint
     end
 
@@ -74,7 +92,7 @@ module Theoldreader
     end
 
     def sanitize_params(endpoint, params)
-      return params unless ENDPOINTS[endpoint][:params]
+      return {} unless ENDPOINTS[endpoint][:params]
       params.delete_if do |key, _|
         !ENDPOINTS[endpoint][:params].include?(key.to_s)
       end
@@ -94,7 +112,7 @@ module Theoldreader
     end
 
     def auth_header
-      token.nil? ? {} : { 'Authorization' => "GoogleLogin auth=#{token}" }
+      api_token.nil? ? {} : { 'Authorization' => "GoogleLogin auth=#{api_token}" }
     end
   end
 
