@@ -35,8 +35,6 @@ Theoldreader::Api.new.accounts_clientlogin(
 => {"SID"=>"none", "LSID"=>"none", "Auth"=>"LyTEJPvTJiSPrCxLu46d"}
 ```
 
-With this token you have access to all other methods of Theoldreader's API.
-
 ### Generic
 
 ```ruby
@@ -62,7 +60,7 @@ api.call('/reader/subscriptions/export')
 
 `call` will filter your options to include only those listed in specification for the given endpoint.
 
-`call` accepts endpoints from `Theoldreader::Api::ENDPOINTS.keys` as its first 
+`call` accepts endpoints from `Theoldreader::Api::ENDPOINTS.keys` as its first argument.
 
 `Theoldreader::Api::ENDPOINTS` includes all available methods from Theoldreader's API (with 'reader/api/0/' being left out), except those three wich returns specific atom feeds (https://theoldreader.com/reader/atom/...). You can access them if you want with `call!`
 
